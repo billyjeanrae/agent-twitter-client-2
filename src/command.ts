@@ -486,6 +486,22 @@ async function executeCommand(commandLine: string) {
       }
       break;
 
+    case 'unfollow':
+      await ensureAuthenticated();
+      const usernameToUnFollow = args[0];
+      if (!usernameToUnFollow) {
+        console.log('Please provide a username to unfollow.');
+      } else {
+        try {
+          // Attempt to follow the user
+          await scraper.unfollowUser(usernameToUnFollow);
+          console.log(`Successfully unollowed user @${usernameToUnFollow}.`);
+        } catch (error) {
+          console.error('Error unfollowing user:', error);
+        }
+      }
+      break;
+
     default:
       console.log(`Unknown command: ${command}. Type 'help' to see available commands.`);
       break;
