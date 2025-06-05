@@ -1,5 +1,5 @@
 {
-  "name": "agent-twitter-client",
+  "name": "@smolmusk/agent-twitter-client-2",
   "description": "A twitter client for agents",
   "keywords": [],
   "version": "0.0.18-rc0",
@@ -72,5 +72,8 @@
       "eslint --cache --fix",
       "prettier --write"
     ]
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
