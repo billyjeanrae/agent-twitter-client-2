@@ -5,12 +5,12 @@ declare global {
 }
 
 // Define platform constants before imports
-globalThis.PLATFORM_NODE = typeof process !== 'undefined' && (
+globalThis.PLATFORM_NODE =
+  typeof process !== 'undefined' &&
   // Node.js check
-  (process.versions?.node != null) ||
-  // Bun check
-  (process.versions?.bun != null)
-);
+  (process.versions?.node != null ||
+    // Bun check
+    process.versions?.bun != null);
 globalThis.PLATFORM_NODE_JEST = false;
 
 // Your existing imports
@@ -19,7 +19,7 @@ import { Photo, Tweet } from './tweets';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import dotenv from 'dotenv';  
+import dotenv from 'dotenv';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -31,7 +31,7 @@ const scraper = new Scraper();
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
-  prompt: '> '
+  prompt: '> ',
 });
 
 // Function to log in and save cookies
@@ -41,7 +41,7 @@ async function loginAndSaveCookies() {
     await scraper.login(
       process.env.TWITTER_USERNAME!,
       process.env.TWITTER_PASSWORD!,
-      process.env.TWITTER_EMAIL
+      process.env.TWITTER_EMAIL,
     );
 
     // Retrieve the current session cookies
@@ -50,7 +50,7 @@ async function loginAndSaveCookies() {
     // Save the cookies to a JSON file for future sessions
     fs.writeFileSync(
       path.resolve(__dirname, 'cookies.json'),
-      JSON.stringify(cookies)
+      JSON.stringify(cookies),
     );
 
     console.log('Logged in and cookies saved.');
@@ -65,17 +65,17 @@ async function loadCookies() {
     // Read cookies from the file system
     const cookiesData = fs.readFileSync(
       path.resolve(__dirname, 'cookies.json'),
-      'utf8'
+      'utf8',
     );
     const cookiesArray = JSON.parse(cookiesData);
 
     // Map cookies to the correct format (strings)
     const cookieStrings = cookiesArray.map((cookie: any) => {
-      return `${cookie.key}=${cookie.value}; Domain=${cookie.domain}; Path=${cookie.path}; ${
-        cookie.secure ? 'Secure' : ''
-      }; ${cookie.httpOnly ? 'HttpOnly' : ''}; SameSite=${
-        cookie.sameSite || 'Lax'
-      }`;
+      return `${cookie.key}=${cookie.value}; Domain=${cookie.domain}; Path=${
+        cookie.path
+      }; ${cookie.secure ? 'Secure' : ''}; ${
+        cookie.httpOnly ? 'HttpOnly' : ''
+      }; SameSite=${cookie.sameSite || 'Lax'}`;
     });
 
     // Set the cookies for the current session
@@ -106,7 +106,7 @@ async function ensureAuthenticated() {
 async function sendTweetCommand(
   text: string,
   mediaFiles?: string[],
-  replyToTweetId?: string
+  replyToTweetId?: string,
 ): Promise<string | null> {
   try {
     let mediaData;
@@ -120,7 +120,7 @@ async function sendTweetCommand(
           const ext = path.extname(filePath).toLowerCase();
           const mediaType = getMediaType(ext);
           return { data: buffer, mediaType };
-        })
+        }),
       );
     }
 
@@ -173,7 +173,11 @@ async function getRepliesToTweet(tweetId: string): Promise<Tweet[]> {
     const searchMode = 1; // SearchMode.Latest
 
     // Fetch replies matching the query
-    for await (const tweet of scraper.searchTweets(query, maxReplies, searchMode)) {
+    for await (const tweet of scraper.searchTweets(
+      query,
+      maxReplies,
+      searchMode,
+    )) {
       // Check if the tweet is a direct reply to the original tweet
       if (tweet.inReplyToStatusId === tweetId) {
         replies.push(tweet);
@@ -209,7 +213,9 @@ async function getPhotosFromTweet(tweetId: string) {
 
     // Check if the tweet exists and contains photos
     if (tweet && tweet.photos.length > 0) {
-      console.log(`Found ${tweet.photos.length} photo(s) in tweet ID ${tweetId}:`);
+      console.log(
+        `Found ${tweet.photos.length} photo(s) in tweet ID ${tweetId}:`,
+      );
       // Iterate over each photo and display its URL
       tweet.photos.forEach((photo: Photo, index: number) => {
         console.log(`Photo ${index + 1}: ${photo.url}`);
@@ -356,7 +362,11 @@ async function executeCommand(commandLine: string) {
         const searchMode = 1; // SearchMode.Latest
 
         // Fetch recent mentions
-        for await (const tweet of scraper.searchTweets(query, maxTweets, searchMode)) {
+        for await (const tweet of scraper.searchTweets(
+          query,
+          maxTweets,
+          searchMode,
+        )) {
           // Exclude your own tweets
           if (tweet.username !== process.env.TWITTER_USERNAME) {
             mentions.push(tweet);
@@ -371,7 +381,9 @@ async function executeCommand(commandLine: string) {
         for (const mention of mentions) {
           // Get replies to the mention
           const replies = await getRepliesToTweet(mention.id!);
-          console.log(`Replies to mention [${mention.id}] by @${mention.username}:`);
+          console.log(
+            `Replies to mention [${mention.id}] by @${mention.username}:`,
+          );
           replies.forEach((reply) => {
             console.log(`- [${reply.id}] @${reply.username}: ${reply.text}`);
           });
@@ -383,20 +395,40 @@ async function executeCommand(commandLine: string) {
 
     case 'help':
       console.log('Available commands:');
-      console.log('  login                     - Login to Twitter and save cookies');
-      console.log('  send-tweet <text> [mediaFiles...]       - Send a tweet with optional media attachments');
-      console.log('  send-long-tweet <text> [mediaFiles...]  - Send a long tweet (Note Tweet) with optional media attachments');
-      console.log('  get-tweets <username>     - Get recent tweets from the specified user');
-      console.log('  get-replies <tweetId>     - Get replies to the specified tweet ID');
-      console.log('  reply-to-tweet <tweetId> <text> - Reply to a tweet with the specified text');
-      console.log('  get-mentions              - Get recent mentions of your account');
+      console.log(
+        '  login                     - Login to Twitter and save cookies',
+      );
+      console.log(
+        '  send-tweet <text> [mediaFiles...]       - Send a tweet with optional media attachments',
+      );
+      console.log(
+        '  send-long-tweet <text> [mediaFiles...]  - Send a long tweet (Note Tweet) with optional media attachments',
+      );
+      console.log(
+        '  get-tweets <username>     - Get recent tweets from the specified user',
+      );
+      console.log(
+        '  get-replies <tweetId>     - Get replies to the specified tweet ID',
+      );
+      console.log(
+        '  reply-to-tweet <tweetId> <text> - Reply to a tweet with the specified text',
+      );
+      console.log(
+        '  get-mentions              - Get recent mentions of your account',
+      );
       console.log('  exit                      - Exit the application');
       console.log('  help                      - Show this help message');
-      console.log('  send-quote-tweet <tweetId> "<text>" [mediaFiles...] - Send a quote tweet with optional media attachments');
-      console.log('  get-photos <tweetId>      - Get photos from a specific tweet');
+      console.log(
+        '  send-quote-tweet <tweetId> "<text>" [mediaFiles...] - Send a quote tweet with optional media attachments',
+      );
+      console.log(
+        '  get-photos <tweetId>      - Get photos from a specific tweet',
+      );
       console.log('  like <tweetId>            - Like a tweet by its ID');
       console.log('  retweet <tweetId>         - Retweet a tweet by its ID');
-      console.log('  follow <username>         - Follow a user by their username');
+      console.log(
+        '  follow <username>         - Follow a user by their username',
+      );
       break;
 
     case 'exit':
@@ -421,7 +453,7 @@ async function executeCommand(commandLine: string) {
 
       if (args.length < 2) {
         console.log(
-          'Usage: send-quote-tweet <tweetId> "<text>" [mediaFile1] [mediaFile2] ...'
+          'Usage: send-quote-tweet <tweetId> "<text>" [mediaFile1] [mediaFile2] ...',
         );
         break;
       }
@@ -503,7 +535,9 @@ async function executeCommand(commandLine: string) {
       break;
 
     default:
-      console.log(`Unknown command: ${command}. Type 'help' to see available commands.`);
+      console.log(
+        `Unknown command: ${command}. Type 'help' to see available commands.`,
+      );
       break;
   }
 }
@@ -512,7 +546,7 @@ async function executeCommand(commandLine: string) {
 async function sendLongTweetCommand(
   text: string,
   mediaFiles?: string[],
-  replyToTweetId?: string
+  replyToTweetId?: string,
 ): Promise<string | null> {
   try {
     let mediaData;
@@ -526,12 +560,16 @@ async function sendLongTweetCommand(
           const ext = path.extname(filePath).toLowerCase();
           const mediaType = getMediaType(ext);
           return { data: buffer, mediaType };
-        })
+        }),
       );
     }
 
     // Send the long tweet using the sendLongTweet function
-    const response = await scraper.sendLongTweet(text, replyToTweetId, mediaData);
+    const response = await scraper.sendLongTweet(
+      text,
+      replyToTweetId,
+      mediaData,
+    );
 
     // Parse the response to extract the tweet ID
     const responseData = await response.json();
@@ -539,7 +577,9 @@ async function sendLongTweetCommand(
       responseData?.data?.notetweet_create?.tweet_results?.result?.rest_id;
 
     if (tweetId) {
-      console.log(`Long tweet sent: "${text.substring(0, 50)}..." (ID: ${tweetId})`);
+      console.log(
+        `Long tweet sent: "${text.substring(0, 50)}..." (ID: ${tweetId})`,
+      );
       return tweetId;
     } else {
       console.error('Tweet ID not found in response.');

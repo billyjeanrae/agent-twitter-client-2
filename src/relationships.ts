@@ -162,7 +162,6 @@ export async function followUser(
   username: string,
   auth: TwitterAuth,
 ): Promise<Response> {
-
   // Check if the user is logged in
   if (!(await auth.isLoggedIn())) {
     throw new Error('Must be logged in to follow users');
@@ -194,8 +193,11 @@ export async function followUser(
   });
 
   // Install auth headers
-  await auth.installTo(headers, 'https://api.twitter.com/1.1/friendships/create.json');
-  
+  await auth.installTo(
+    headers,
+    'https://api.twitter.com/1.1/friendships/create.json',
+  );
+
   // Make the follow request using auth.fetch
   const res = await auth.fetch(
     'https://api.twitter.com/1.1/friendships/create.json',
@@ -225,7 +227,6 @@ export async function unfollowUser(
   username: string,
   auth: TwitterAuth,
 ): Promise<Response> {
-
   // Check if the user is logged in
   if (!(await auth.isLoggedIn())) {
     throw new Error('Must be logged in to unfollow users');
@@ -257,7 +258,10 @@ export async function unfollowUser(
   });
 
   // Install auth headers
-  await auth.installTo(headers, 'https://api.twitter.com/1.1/friendships/destroy.json');
+  await auth.installTo(
+    headers,
+    'https://api.twitter.com/1.1/friendships/destroy.json',
+  );
 
   // Make the unfollow request using auth.fetch
   const res = await auth.fetch(
@@ -282,4 +286,67 @@ export async function unfollowUser(
       'Content-Type': 'application/json',
     },
   });
+}
+
+interface FriendshipStatus {
+  following: boolean; // I (auth’d user) follow target?
+  followed_by: boolean; // Target follows me?
+}
+
+export async function getFriendshipStatus(
+  username: string,
+  auth: TwitterAuth,
+): Promise<FriendshipStatus> {
+  // 1) Ensure we’re logged in
+  if (!(await auth.isLoggedIn())) {
+    throw new Error('Must be logged in to check friendship status');
+  }
+
+  // 2) Resolve target user ID
+  const userIdResult = await getUserIdByScreenName(username, auth);
+  if (!userIdResult.success) {
+    throw new Error(`Failed to get user ID: ${userIdResult.err.message}`);
+  }
+  const targetUserId = userIdResult.value;
+
+  // 3) Build query for friendships/show
+  const params = new URLSearchParams({
+    target_id: targetUserId,
+  });
+  const url = `https://api.twitter.com/1.1/friendships/show.json?${params.toString()}`;
+
+  // 4) Prepare headers (OAuth2Session) and install auth
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+    Referer: `https://twitter.com/${username}`,
+    'X-Twitter-Active-User': 'yes',
+    'X-Twitter-Auth-Type': 'OAuth2Session',
+    'X-Twitter-Client-Language': 'en',
+  });
+  await auth.installTo(headers, url);
+
+  // 5) Fetch relationship data
+  const res = await auth.fetch(url, {
+    method: 'GET',
+    headers,
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(`friendships/show failed: ${res.status} ${res.statusText}`);
+  }
+
+  const json = await res.json();
+  const rel = json.relationship?.source;
+  if (
+    !rel ||
+    typeof rel.following !== 'boolean' ||
+    typeof rel.followed_by !== 'boolean'
+  ) {
+    throw new Error('Malformed response from friendships/show');
+  }
+
+  return {
+    following: rel.following,
+    followed_by: rel.followed_by,
+  };
 }

@@ -2,7 +2,7 @@
   "name": "@smolmusk/agent-twitter-client-2",
   "description": "A twitter client for agents",
   "keywords": [],
-  "version": "0.0.18-rc0",
+  "version": "0.0.18-rc1",
   "main": "dist/default/cjs/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {

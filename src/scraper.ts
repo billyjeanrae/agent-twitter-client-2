@@ -27,6 +27,7 @@ import {
   getFollowers,
   followUser,
   unfollowUser,
+  getFriendshipStatus,
 } from './relationships';
 import { QueryProfilesResponse, QueryTweetsResponse } from './timeline-v1';
 import { getTrends } from './trends';
@@ -883,9 +884,9 @@ export class Scraper {
    * @param userId The user ID of the user to follow.
    * @returns A promise that resolves when the user is followed.
    */
-  public async followUser(userName: string): Promise<void> {
+  public async followUser(userName: string): Promise<Response> {
     // Call the followUser function from relationships.ts
-    await followUser(userName, this.auth);
+    return await followUser(userName, this.auth);
   }
 
   /**
@@ -896,6 +897,11 @@ export class Scraper {
   public async unfollowUser(userName: string): Promise<Response> {
     // Call the unfollowUser function from relationships.ts
     return await unfollowUser(userName, this.auth);
+  }
+
+  public async getFriendshipStatus(userName: string): Promise<any> {
+    // Call the getFollowStatus function from relationships.ts
+    return await getFriendshipStatus(userName, this.auth);
   }
 
   /**
