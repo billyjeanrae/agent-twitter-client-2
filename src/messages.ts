@@ -1,5 +1,6 @@
 import { TwitterAuth } from './auth';
 import { updateCookieJar } from './requests';
+import { getTwitterApiHeaders } from './browser-fingerprint';
 
 export interface DirectMessage {
   id: string;
@@ -246,17 +247,17 @@ export async function getDirectMessageConversations(
   const cookies = await auth.cookieJar().getCookies(url);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
 
-  const headers = new Headers({
+  const baseHeaders = {
     authorization: `Bearer ${(auth as any).bearerToken}`,
     cookie: await auth.cookieJar().getCookieString(url),
     'content-type': 'application/json',
-    'User-Agent':
-      'Mozilla/5.0 (Linux; Android 11; Nokia G20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.88 Mobile Safari/537.36',
     'x-guest-token': (auth as any).guestToken,
     'x-twitter-auth-type': 'OAuth2Client',
     'x-twitter-active-user': 'yes',
     'x-csrf-token': xCsrfToken?.value as string,
-  });
+  };
+  
+  const headers = await getTwitterApiHeaders(baseHeaders);
 
   const response = await fetch(finalUrl, {
     method: 'GET',
@@ -290,17 +291,17 @@ export async function sendDirectMessage(
   const cookies = await auth.cookieJar().getCookies(url);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
 
-  const headers = new Headers({
+  const baseHeaders = {
     authorization: `Bearer ${(auth as any).bearerToken}`,
     cookie: await auth.cookieJar().getCookieString(url),
     'content-type': 'application/json',
-    'User-Agent':
-      'Mozilla/5.0 (Linux; Android 11; Nokia G20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.88 Mobile Safari/537.36',
     'x-guest-token': (auth as any).guestToken,
     'x-twitter-auth-type': 'OAuth2Client',
     'x-twitter-active-user': 'yes',
     'x-csrf-token': xCsrfToken?.value as string,
-  });
+  };
+  
+  const headers = await getTwitterApiHeaders(baseHeaders);
 
   const payload = {
     conversation_id: `${conversation_id}`,
