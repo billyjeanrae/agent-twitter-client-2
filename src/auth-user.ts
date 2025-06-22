@@ -8,6 +8,7 @@ import { Type, type Static } from '@sinclair/typebox';
 import { Check } from '@sinclair/typebox/value';
 import * as OTPAuth from 'otpauth';
 import { LegacyUserRaw, parseProfile, type Profile } from './profile';
+import { getTwitterApiHeaders } from './browser-fingerprint';
 
 interface TwitterUserAuthFlowInitRequest {
   flow_name: string;
@@ -348,17 +349,18 @@ export class TwitterUserAuth extends TwitterGuestAuth {
       throw new Error('Authentication token is null or undefined.');
     }
 
-    const headers = new Headers({
+    // Apply browser fingerprinting for enhanced stealth
+    const baseHeaders = {
       authorization: `Bearer ${this.bearerToken}`,
       cookie: await this.getCookieString(),
       'content-type': 'application/json',
-      'User-Agent':
-        'Mozilla/5.0 (Linux; Android 11; Nokia G20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.88 Mobile Safari/537.36',
       'x-guest-token': token,
       'x-twitter-auth-type': 'OAuth2Client',
       'x-twitter-active-user': 'yes',
       'x-twitter-client-language': 'en',
-    });
+    };
+    
+    const headers = await getTwitterApiHeaders(baseHeaders);
     await this.installCsrfToken(headers);
 
     const res = await this.fetch(onboardingTaskUrl, {
